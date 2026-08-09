@@ -1,10 +1,8 @@
 """Includes code to process ERA5 climate data for a specific point (latitude, longitude) and export daily aggregated data to a CSV file."""
-import cdsapi
 import xarray as xr
 import pandas as pd
 import numpy as np
 from pathlib import Path
-import zipfile
 
 lat_point = 36.75
 lon_point = 3.06
