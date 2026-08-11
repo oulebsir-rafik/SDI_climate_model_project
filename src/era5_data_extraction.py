@@ -1,20 +1,35 @@
-""" include code to donwload the ERA5 climate data for a specific point (latitude, longitude) and export daily aggregated data to a CSV file."""
-import cdsapi
-import xarray as xr
-import pandas as pd
-import numpy as np
-from pathlib import Path
+"""Download ERA5 climate data for the Corso watershed and export daily aggregated data to a CSV file.
+
+The extraction point is the centroid of the delineated watershed
+(output/corso_watershed/watershed.geojson), not an arbitrary coordinate: at ERA5's
+native 0.25 degree grid resolution the whole watershed falls inside a single grid
+cell, so the nearest cell to the centroid is representative of the catchment.
+"""
+import json
 import zipfile
+from pathlib import Path
+
+import cdsapi
+import numpy as np
+import pandas as pd
+import xarray as xr
+from shapely.geometry import shape
 
 # ==========================================================
-# USER INPUTS
+# WATERSHED-DERIVED EXTRACTION POINT
 # ==========================================================
 
-lat_point = 36.75
-lon_point = 3.06
+WATERSHED_GEOJSON = Path("output/corso_watershed/watershed.geojson")
 
-out_dir = Path("era5_downloads")
-out_dir.mkdir(exist_ok=True)
+with WATERSHED_GEOJSON.open() as f:
+    _watershed = json.load(f)
+
+_centroid = shape(_watershed["features"][0]["geometry"]).centroid
+lat_point = _centroid.y
+lon_point = _centroid.x
+
+out_dir = Path("era5_downloads/corso_watershed")
+out_dir.mkdir(parents=True, exist_ok=True)
 
 variables = [
     "2m_temperature",
@@ -44,9 +59,9 @@ area = [
     lon_point + buffer
 ]
 
-# # ==========================================================
-# # DOWNLOAD DATA
-# # ==========================================================
+# ==========================================================
+# DOWNLOAD DATA
+# ==========================================================
 
 client = cdsapi.Client()
 
@@ -55,12 +70,14 @@ downloaded_files = []
 for year in years:
     for month in months_by_year[year]:
 
+        month_dir = out_dir / f"era5_{year}_{month}"
         zip_file = out_dir / f"era5_{year}_{month}.zip"
-        nc_file = out_dir / f"era5_{year}_{month}.nc"
 
-        if nc_file.exists():
-            print(f"NetCDF already exists: {nc_file}")
-            downloaded_files.append(nc_file)
+        existing_nc_files = list(month_dir.glob("*.nc")) if month_dir.exists() else []
+
+        if existing_nc_files:
+            print(f"NetCDF already exists: {month_dir}")
+            downloaded_files.extend(existing_nc_files)
             continue
 
         if not zip_file.exists():
@@ -86,20 +103,17 @@ for year in years:
 
         print(f"Extracting {zip_file}...")
 
+        month_dir.mkdir(exist_ok=True)
         with zipfile.ZipFile(zip_file, "r") as z:
-            z.extractall(out_dir)
+            z.extractall(month_dir)
 
-            extracted_files = z.namelist()
-            print("Extracted files:", extracted_files)
+        # CDS splits the request into an "instant" file (t2m, d2m, u10, v10, sp)
+        # and an "accum" file (tp, ssrd) - both are needed, so keep every .nc
+        # extracted rather than picking just one.
+        month_nc_files = list(month_dir.glob("*.nc"))
+        print("Extracted files:", [f.name for f in month_nc_files])
 
-            # Find the extracted NetCDF file
-            for name in extracted_files:
-                if name.endswith(".nc"):
-                    extracted_nc = out_dir / name
-                    extracted_nc.rename(nc_file)
-                    break
-
-        downloaded_files.append(nc_file)
+        downloaded_files.extend(month_nc_files)
 
 
 # ==========================================================
@@ -186,7 +200,8 @@ cols = [
 
 df = df[cols]
 
-output_csv = "era5_daily_point_Jan2024_Feb2025.csv"
+output_csv = Path("data/clean/era5_daily_point_Jan2024_Feb2025.csv")
+output_csv.parent.mkdir(parents=True, exist_ok=True)
 df.to_csv(output_csv, index=False)
 
 print(df.head())
