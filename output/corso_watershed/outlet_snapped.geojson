@@ -1,0 +1,39 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "original_outlet",
+        "crs": "EPSG:4326"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3.4547189108716845,
+          36.765885394446116
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "snapped_outlet",
+        "crs": "EPSG:4326",
+        "snap_distance_m": 181.4304263253773,
+        "snapped_accumulation": 116166.0,
+        "candidate_stream_cells": 196383,
+        "candidate_stream_cells_within_radius": 241,
+        "fallback_triggered": false,
+        "snap_method": "threshold_stream"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3.453767308257191,
+          36.76444013994292
+        ]
+      }
+    }
+  ]
+}

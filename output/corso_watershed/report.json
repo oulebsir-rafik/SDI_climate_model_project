@@ -1,0 +1,59 @@
+{
+  "outlet_input": {
+    "latitude": 36.76588539444612,
+    "longitude": 3.454718910871684,
+    "crs": "EPSG:4326",
+    "coordinate_order": "latitude, longitude"
+  },
+  "outlet_final": {
+    "latitude": 36.76444013994292,
+    "longitude": 3.453767308257191,
+    "crs": "EPSG:4326"
+  },
+  "working_crs": "EPSG:32631",
+  "area_km2": 90.71175672219842,
+  "snapping": {
+    "enabled": true,
+    "max_distance_m": 1500.0,
+    "warning_distance_m": 1200.0,
+    "accumulation_threshold": 800.0,
+    "snap_distance_m": 181.4304263253773,
+    "snapped_accumulation": 116166.0,
+    "candidate_stream_cells": 196383,
+    "candidate_stream_cells_within_radius": 241,
+    "fallback_triggered": false,
+    "snap_method": "threshold_stream",
+    "large_snap_warning": false
+  },
+  "dem": {
+    "requested_source": "srtm30",
+    "used_source": "copernicus30",
+    "fallback_triggered": true,
+    "fallback_reason": "SRTM download requested but OpenTopography API key is missing. Set OPENTOPOGRAPHY_API_KEY or pass opentopography_api_key.",
+    "download_margin_deg": 0.35
+  },
+  "validation": {
+    "edge_truncation_warning": false,
+    "geometry_valid": true
+  },
+  "parameters": {
+    "bbox_margin_deg": 0.35,
+    "accumulation_threshold": 800.0,
+    "snap_distance_m": 1500.0,
+    "snap_warning_distance_m": 1200.0,
+    "snapping_enabled": true,
+    "png_dpi": 200,
+    "dem_source": "srtm30"
+  },
+  "warnings": [
+    "DEM source fallback was triggered from SRTM to Copernicus. Provide an OpenTopography API key to use SRTM directly."
+  ],
+  "files": {
+    "dem_4326": "output/corso_watershed/dem_4326.tif",
+    "dem_projected": "output/corso_watershed/dem_projected.tif",
+    "watershed_geojson": "output/corso_watershed/watershed.geojson",
+    "outlet_geojson": "output/corso_watershed/outlet_snapped.geojson",
+    "watershed_png": "output/corso_watershed/watershed.png",
+    "report_json": "output/corso_watershed/report.json"
+  }
+}
