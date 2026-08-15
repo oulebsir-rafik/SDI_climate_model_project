@@ -8,3 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+#AI related folders and files
+specs/
