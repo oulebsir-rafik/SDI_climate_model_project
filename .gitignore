@@ -11,3 +11,5 @@ wheels/
 
 #AI related folders and files
 specs/
+.claude/
+diary/
