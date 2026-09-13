@@ -128,16 +128,29 @@ def build_features(history: pd.DataFrame, as_of: pd.Timestamp, config: FeatureCo
     return pd.Series(features, name=as_of)
 
 
-def build_feature_table(history: pd.DataFrame, config: FeatureConfig) -> pd.DataFrame:
-    """Build the full training feature table: one engineered feature row per calendar day in
-    `history`, plus next-day (t+1) target columns for each BC parameter.
+def build_feature_table(
+    history: pd.DataFrame,
+    config: FeatureConfig,
+    dates: pd.DatetimeIndex | None = None,
+) -> pd.DataFrame:
+    """Build an engineered feature table: one row per `as_of` day, plus next-day (t+1) target
+    columns for each BC parameter.
+
+    `dates` defaults to every day in `history.index` (the original training-table behavior).
+    Pass an explicit `dates` to build rows for a subset of days instead (e.g. a holdout window)
+    while still resolving each row's lag/rolling features from the *full* `history` passed in —
+    matching exactly what `cv.evaluate_fold` feeds a model at h=1 (see
+    `intake_forecast.explainability`, which uses this to build a faithful holdout feature table
+    for horizon-1 SHAP explanations).
     """
-    rows = [build_features(history, as_of, config) for as_of in history.index]
+    as_of_dates = pd.DatetimeIndex(dates) if dates is not None else history.index
+    rows = [build_features(history, as_of, config) for as_of in as_of_dates]
     table = pd.DataFrame(rows)
     table.index.name = "date"
 
     for param, target_col in TARGET_COLUMNS.items():
-        table[target_col] = history[param].shift(-1)
+        target_dates = as_of_dates + pd.Timedelta(days=1)
+        table[target_col] = history[param].reindex(target_dates).to_numpy()
 
     return table
 

@@ -52,7 +52,7 @@ class LagPlusOneModel:
     def __init__(self, parameter: str):
         self.parameter = parameter
 
-    def fit(self, X, y):
+    def fit(self, X, y, **kwargs):
         return self
 
     def predict(self, X):
@@ -70,16 +70,18 @@ def _steep_history(n_days: int = 60) -> pd.DataFrame:
 
 
 def test_evaluate_fold_recursive_rollout_uses_predictions_not_future_ground_truth():
-    history = _steep_history()
+    # A 100-day train window (rather than a smaller one) so fit_model's early-stopping eval
+    # split (15%, min 15 rows) has enough usable rows to not raise — see model.py.
+    history = _steep_history(n_days=150)
     config = FeatureConfig(lag_days=[1], rolling_windows=[], include_day_of_year=False, include_day_of_week=False)
 
     from src.intake_forecast.cv import Fold
 
     fold = Fold(
         train_start=history.index[0],
-        train_end=history.index[19],
-        test_start=history.index[20],
-        test_end=history.index[39],
+        train_end=history.index[99],
+        test_start=history.index[100],
+        test_end=history.index[119],
     )
 
     predictions = evaluate_fold(fold, history, LagPlusOneModel, config, max_horizon=2)
@@ -102,16 +104,18 @@ def test_evaluate_fold_recursive_rollout_uses_predictions_not_future_ground_trut
 def test_evaluate_fold_leaves_missing_actuals_as_nan_and_aggregate_metrics_drops_them():
     from src.intake_forecast.cv import Fold
 
-    history = _steep_history()
-    missing_day = history.index[21]
+    # A 100-day train window (rather than a smaller one) so fit_model's early-stopping eval
+    # split (15%, min 15 rows) has enough usable rows to not raise — see model.py.
+    history = _steep_history(n_days=150)
+    missing_day = history.index[101]
     history.loc[missing_day, "pH_BC"] = np.nan
 
     config = FeatureConfig(lag_days=[1], rolling_windows=[], include_day_of_year=False, include_day_of_week=False)
     fold = Fold(
         train_start=history.index[0],
-        train_end=history.index[19],
-        test_start=history.index[20],
-        test_end=history.index[39],
+        train_end=history.index[99],
+        test_start=history.index[100],
+        test_end=history.index[119],
     )
 
     predictions = evaluate_fold(fold, history, LagPlusOneModel, config, max_horizon=2)
@@ -140,7 +144,7 @@ class ColumnSpyModel:
         self.fit_columns = None
         self.predict_columns = None
 
-    def fit(self, X, y):
+    def fit(self, X, y, **kwargs):
         self.fit_columns = list(X.columns)
         return self
 
@@ -152,13 +156,15 @@ class ColumnSpyModel:
 def test_evaluate_fold_restricts_columns_per_parameter_via_predictor_config():
     from src.intake_forecast.cv import Fold
 
-    history = _steep_history()
+    # A 100-day train window (rather than a smaller one) so fit_model's early-stopping eval
+    # split (15%, min 15 rows) has enough usable rows to not raise — see model.py.
+    history = _steep_history(n_days=150)
     config = FeatureConfig(lag_days=[1], rolling_windows=[], include_day_of_year=False, include_day_of_week=False)
     fold = Fold(
         train_start=history.index[0],
-        train_end=history.index[19],
-        test_start=history.index[20],
-        test_end=history.index[24],
+        train_end=history.index[99],
+        test_start=history.index[100],
+        test_end=history.index[104],
     )
 
     predictor_config = {"pH_BC": {"predictor_parameters": ["pH_BC"], "include_calendar": False}}
