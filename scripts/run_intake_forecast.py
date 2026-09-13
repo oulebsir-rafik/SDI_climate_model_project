@@ -1,10 +1,12 @@
 """Launch a full intake-forecast tuning + evaluation run.
 
 Loads the BC-station daily series, runs one Optuna study per parameter (pH, temperature,
-conductivity, TDS), and writes each parameter's tuned model, holdout metrics/predictions, and
-diagnostic plots under `--output-root/{run_id}/{parameter}/`, plus a `run_config.json`
-describing the run. See specs/intake-forecast-cv-and-metrics.md and
-specs/intake-forecast-model-and-tuning.md for the design this runs.
+conductivity, TDS), and writes each parameter's tuned model, holdout metrics/predictions,
+diagnostic plots, and (unless --no-explain) persisted SHAP values under
+`--output-root/{run_id}/{parameter}/`, plus a `run_config.json` describing the run. See
+specs/intake-forecast-cv-and-metrics.md, specs/intake-forecast-model-and-tuning.md, and
+specs/intake-forecast-explainability.md for the design this runs. Use
+scripts/plot_explanations.py to turn persisted SHAP values into plots.
 
 Usage:
     .venv/bin/python scripts/run_intake_forecast.py
@@ -50,10 +52,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--n-trials", type=int, default=100, help="Optuna trials per parameter (spec default: 100).")
     parser.add_argument("--max-horizon", type=int, default=7, help="Recursive forecast horizon in days.")
     parser.add_argument("--n-folds", type=int, default=4, help="Number of walk-forward CV folds.")
-    parser.add_argument("--init-train-days", type=int, default=120)
-    parser.add_argument("--test-len-days", type=int, default=30)
+    parser.add_argument("--init-train-days", type=int, default=100)
+    parser.add_argument("--test-len-days", type=int, default=40)
     parser.add_argument("--gap-days", type=int, default=21, help="Purge gap between train and test in each fold.")
     parser.add_argument("--holdout-days", type=int, default=60, help="Final untouched holdout period, in days.")
+    parser.add_argument(
+        "--explain",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Compute and persist SHAP values for each parameter's final model (see "
+            "src/intake_forecast/explainability.py). Use --no-explain to skip this on quick "
+            "runs. Regenerating plots from persisted SHAP values is a separate step: "
+            "scripts/plot_explanations.py."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -77,6 +90,7 @@ if __name__ == "__main__":
         n_trials=args.n_trials,
         max_horizon=args.max_horizon,
         run_id=args.run_id,
+        explain=args.explain,
     )
     elapsed_minutes = (time.time() - start) / 60
 
